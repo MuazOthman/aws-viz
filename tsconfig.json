@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "target": "ES2019",
+    "module": "commonjs",
+    "declaration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "preserveConstEnums": true,
+    "allowSyntheticDefaultImports": true,
+    //"noImplicitAny": false,
+    //"strictNullChecks": false,
+    //"noImplicitThis": true,
+    //"noUnusedLocals": false,
+    //"noUnusedParameters": false,
+    //"noImplicitReturns": true,
+    //"noFallthroughCasesInSwitch": false,
+    //"strictPropertyInitialization": false,
+    "sourceMap": true,
+    "lib": ["ESNext"],
+    "outDir": "dist",
+    "declarationDir": "dist"
+  },
+  "exclude": ["node_modules", "dist"]
+  // "exclude": ["node_modules", "**/*.spec.ts"]
+}
