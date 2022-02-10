@@ -15,7 +15,7 @@ module.exports = {
     '@typescript-eslint/no-useless-constructor': ['error'],
     '@typescript-eslint/return-await': ['error'],
     '@typescript-eslint/await-thenable': ['error'],
-    '@typescript-eslint/no-explicit-any': ['none'],
+    '@typescript-eslint/no-explicit-any': ['off'],
     // '@typescript-eslint/no-unnecessary-condition': ['warn'],
     '@typescript-eslint/prefer-as-const': ['warn'],
     '@typescript-eslint/prefer-namespace-keyword': ['warn'],
