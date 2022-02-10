@@ -4,7 +4,7 @@ export type ComponentType =
   | 'EventBus'
   | 'Function'
   | 'Queue'
-  | 'RestEndpoint'
+  | 'ApiEndpoint'
   | 'Schedule'
   | 'Table'
   | 'Topic';

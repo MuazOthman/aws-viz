@@ -52,7 +52,7 @@ function readComponent(vertex: unknown): Component {
   const name = extractInnerText(vertex['@_value']).replace(/[\r\n]/g, '');
   if (style.search(/shape=mxgraph\.aws4\.lambda_function/g) >= 0) return new Component(name, 'Function');
   if (style.search(/shape=mxgraph\.aws4\.client/g) >= 0) return new Component(name, 'Browser');
-  if (style.search(/shape=mxgraph\.aws4\.endpoint/g) >= 0) return new Component(name, 'RestEndpoint');
+  if (style.search(/shape=mxgraph\.aws4\.endpoint/g) >= 0) return new Component(name, 'ApiEndpoint');
   if (style.search(/shape=mxgraph\.aws4\.table/g) >= 0) return new Component(name, 'Table');
   if (style.search(/shape=mxgraph\.aws4\.topic/g) >= 0) return new Component(name, 'Topic');
   if (style.search(/shape=mxgraph\.aws4\.queue/g) >= 0) return new Component(name, 'Queue');

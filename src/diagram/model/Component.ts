@@ -24,6 +24,9 @@ export class Component {
   get outboundConnections(): Array<Connection> {
     return [...this._outboundConnections];
   }
+  get properties(): Record<string, string> {
+    return this._properties;
+  }
 
   toString(): string {
     return `${this.name}: ${this.type}`;
