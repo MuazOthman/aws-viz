@@ -1,4 +1,4 @@
 import * as Model from './model';
-import * as Reader from './reader';
+import { Reader } from './reader';
 
 export { Model, Reader };

@@ -1,3 +1,4 @@
 import { SamWriter } from './SamWriter';
+import { DefaultSamWriter } from './DefaultSamWriter';
 
-export { SamWriter };
+export { SamWriter, DefaultSamWriter };

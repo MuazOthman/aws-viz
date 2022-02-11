@@ -1,6 +1,7 @@
 import * as Diagram from '.';
 
-const app = Diagram.Reader.readDiagram('Sample Files/web-app1.drawio');
+const reader = new Diagram.Reader({ runtimeColorMapping: { '76608A': 'dotnetcore3.1' } });
+const app = reader.read('Sample Files/web-app1.drawio');
 app.compile();
 console.log('===== Application =====');
 // console.log(JSON.stringify(app));

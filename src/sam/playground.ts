@@ -7,11 +7,13 @@
 // console.log(JSON.stringify(yml, null, 2));
 
 import * as Diagram from '../diagram';
-import { SamWriter } from './generator';
+import { DefaultSamWriter } from './generator';
 
-// const app = Diagram.Reader.readDiagram('Sample Files/dynamodb-stream.drawio');
-const app = Diagram.Reader.readDiagram('Sample Files/scheduled-task.drawio');
+const reader = new Diagram.Reader({ runtimeColorMapping: { '76608A': 'nodejs12.x' } });
+const app = reader.read('Sample Files/scheduled-task.drawio');
 
 app.compile();
-const writer = new SamWriter({ lambdaXRayTracingLayer: SamWriter.NodeJSLambdaXRayTracingLayer });
+const writer = new DefaultSamWriter({
+  lambdaXRayTracingLayer: DefaultSamWriter.NodeJSLambdaXRayTracingLayer,
+});
 writer.generateSamFile(app);
