@@ -1,4 +1,4 @@
-export type SamWriterOptions = {
+export type CodeGeneratorOptions = {
   isCorsDisabled?: boolean;
   defaultRuntime?: string;
   additionalGlobalEnvironmentVariables?: Record<string, any>;

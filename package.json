@@ -1,5 +1,5 @@
 {
-  "name": "aws-viz",
+  "name": "@muazothman/aws-viz",
   "version": "0.0.1",
   "description": "Use diagrams to build AWS cloud-native applications",
   "main": "dist/index.js",
@@ -21,11 +21,12 @@
     "@types/html-to-text": "^8.0.1",
     "@types/jest": "^27.0.2",
     "@types/lodash.isequal": "^4.5.5",
-    "@types/node": "^17.0.16",
+    "@types/lodash.uniq": "^4.5.6",
+    "@types/node": "^17.0.17",
     "@types/pako": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",
-    "eslint": "^8.8.0",
+    "eslint": "^8.9.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "jest": "^27.5.1",
@@ -43,6 +44,7 @@
     "fast-xml-parser": "^4.0.2",
     "html-to-text": "^8.1.0",
     "lodash.isequal": "^4.5.0",
+    "lodash.uniq": "^4.5.0",
     "pako": "^2.0.4",
     "yaml-cfn": "^0.3.1"
   }

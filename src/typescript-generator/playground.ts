@@ -7,13 +7,12 @@
 // console.log(JSON.stringify(yml, null, 2));
 
 import * as Diagram from '../diagram';
-import { DefaultSamWriter } from './generator';
+import { CodeGenerator } from './CodeGenerator';
 
 const reader = new Diagram.Reader({ runtimeColorMapping: { '76608A': 'nodejs12.x' } });
-const app = reader.read('Sample Files/scheduled-task.drawio');
+const app = reader.read('Sample Files/web-app1.drawio');
 
 app.compile();
-const writer = new DefaultSamWriter({
-  lambdaXRayTracingLayer: DefaultSamWriter.NodeJSLambdaXRayTracingLayer,
-});
-writer.generateSamFile(app);
+const writer = new CodeGenerator('../sample-generated-code');
+console.log(writer.getFilesToBeUpdated(app));
+writer.update(app);

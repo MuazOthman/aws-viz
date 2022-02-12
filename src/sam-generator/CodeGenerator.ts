@@ -1,16 +1,19 @@
-import { Application, Component } from '../../diagram/model';
+import { Application, Component } from '../diagram/model';
 import { yamlDump, yamlParse } from 'yaml-cfn';
 import { writeFileSync, existsSync, readFileSync } from 'fs';
 import isEqual from 'lodash.isequal';
-import { SamWriterOptions } from './SamWriterOptions';
+import { CodeGeneratorOptions } from './CodeGeneratorOptions';
+import { AbstractCodeGenerator } from '../AbstractCodeGenerator';
+import { join } from 'path';
 
-export abstract class SamWriter {
+export abstract class CodeGenerator extends AbstractCodeGenerator {
   public static NodeJSLambdaXRayTracingLayer = {
     'Fn::Sub': 'arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:16',
   };
   protected _model: any = {};
-  protected readonly _options: SamWriterOptions;
-  constructor(options?: SamWriterOptions) {
+  protected readonly _options: CodeGeneratorOptions;
+  constructor(workspaceRoot: string, options?: CodeGeneratorOptions) {
+    super(workspaceRoot);
     this._options = options ?? { defaultRuntime: 'nodejs14.x' };
     if (!this._options.defaultTableProperties) {
       this._options.defaultTableProperties = {
@@ -170,8 +173,13 @@ export abstract class SamWriter {
     }
   }
 
-  public generateSamFile(app: Application, file = 'template-gen.yaml'): void {
+  getFilesToBeUpdated(): string[] {
+    return ['template.yaml'];
+  }
+
+  update(app: Application): void {
     if (!app.isCompiled) app.compile();
+    const file = join(this.workspaceRoot, 'template.yaml');
     if (existsSync(file)) {
       this._model = yamlParse(readFileSync(file, 'utf-8')) ?? {};
     }

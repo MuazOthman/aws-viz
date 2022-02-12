@@ -1,9 +1,9 @@
-import { Component } from '../../diagram/model';
+import { Component } from '../diagram/model';
 import { cleanString } from './cleanString';
 import { parseSimpleFilters } from './parseSimpleFilters';
-import { SamWriter } from './SamWriter';
+import { CodeGenerator } from './CodeGenerator';
 
-export class DefaultSamWriter extends SamWriter {
+export class DefaultCodeGenerator extends CodeGenerator {
   protected handleFunction(f: Component): void {
     if (!(f.name in this._model.Resources)) {
       this._model.Resources[f.name] = { Properties: {} };
