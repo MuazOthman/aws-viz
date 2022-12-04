@@ -70,7 +70,7 @@ export class Reader {
   }
 
   private _getApiType(style: string): string {
-    if (this._options.runtimeColorMapping) {
+    if (this._options.apiTypeColorMapping) {
       for (const color in this._options.apiTypeColorMapping) {
         if (style.search(new RegExp(`fillColor=#${color}`, 'gi')) >= 0) {
           return this._options.apiTypeColorMapping[color];
