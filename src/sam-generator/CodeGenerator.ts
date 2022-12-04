@@ -61,6 +61,7 @@ export abstract class CodeGenerator extends AbstractCodeGenerator {
   protected abstract handleTable(t: Component): void;
   protected abstract handleEventBus(t: Component): void;
   protected abstract handleQueue(t: Component): void;
+  protected abstract handleWebsocketApiEndpoint(api: Component): void;
 
   protected initModel(): void {
     this._model = {
@@ -101,13 +102,18 @@ export abstract class CodeGenerator extends AbstractCodeGenerator {
   }
 
   protected fixModel(app: Application): void {
-    const hasApiEndpoint = app.components.some((c) => c.type === 'ApiEndpoint');
+    const hasHttpApiEndpoint = app.components.some(
+      (c) => c.type === 'ApiEndpoint' && c.properties['apiType'] === 'Http',
+    );
     if (!this._model.Resources) {
       this._model.Resources = {};
     }
+    if (!this._model.Outputs) {
+      this._model.Outputs = {};
+    }
 
     // add HttpApi resource if needed
-    if (hasApiEndpoint) {
+    if (hasHttpApiEndpoint) {
       this._model.Resources.HttpApiResource = {
         Type: 'AWS::Serverless::HttpApi',
         Properties: {},
@@ -121,16 +127,16 @@ export abstract class CodeGenerator extends AbstractCodeGenerator {
         };
       }
 
-      this._model.Outputs = {
-        RootUrl: {
-          Description: 'Root URL for API',
-          Value: {
-            'Fn::Sub': 'https://${HttpApiResource}.execute-api.${AWS::Region}.amazonaws.com',
-          },
+      this._model.Outputs.RootUrl = {
+        Description: 'Root URL for API',
+        Value: {
+          'Fn::Sub': 'https://${HttpApiResource}.execute-api.${AWS::Region}.amazonaws.com',
         },
       };
     }
   }
+
+  protected build;
 
   protected buildSamObject(app: Application): void {
     if (Object.keys(this._model).length === 0) {
@@ -158,7 +164,9 @@ export abstract class CodeGenerator extends AbstractCodeGenerator {
           this.handleQueue(component);
           break;
         case 'ApiEndpoint':
-          // nothing
+          if (component.properties['apiType'] === 'Websocket') {
+            this.handleWebsocketApiEndpoint(component);
+          }
           break;
         case 'Schedule':
           // nothing

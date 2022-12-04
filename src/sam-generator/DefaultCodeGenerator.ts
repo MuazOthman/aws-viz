@@ -57,7 +57,27 @@ export class DefaultCodeGenerator extends CodeGenerator {
           });
           break;
         case 'ApiEndpoint':
-          // not supported
+          if (conn.target.properties['apiType'] === 'Websocket') {
+            this.addPolicyToFunction(f.name, {
+              Statement: [
+                {
+                  Effect: 'Allow',
+                  Action: ['execute-api:ManageConnections'],
+                  Resource: [
+                    {
+                      'Fn::Sub': `arn:aws:execute-api:\${AWS::Region}:\${AWS::AccountId}:\${${conn.target.name}}/*`,
+                    },
+                  ],
+                },
+              ],
+            });
+            this.addEnvironmentVariable(f.name, `${conn.target.name}ApiId`, {
+              Ref: conn.target.name,
+            });
+            this.addEnvironmentVariable(f.name, `${conn.target.name}Stage`, {
+              Ref: `${conn.target.name}`,
+            });
+          }
           break;
         case 'Schedule':
           // not supported
@@ -122,13 +142,15 @@ export class DefaultCodeGenerator extends CodeGenerator {
           };
           break;
         case 'ApiEndpoint':
-          this._model.Resources[f.name].Properties.Events[`${cleanSourceName}Api`] = {
-            Type: 'Api',
-            Properties: {
-              Path: conn.source.properties.Endpoint,
-              Method: conn.source.properties.HttpMethod,
-            },
-          };
+          if (conn.source.properties.apiType === 'Http') {
+            this._model.Resources[f.name].Properties.Events[`${cleanSourceName}Api`] = {
+              Type: 'Api',
+              Properties: {
+                Path: conn.source.properties.Endpoint,
+                Method: conn.source.properties.HttpMethod,
+              },
+            };
+          }
           break;
         case 'Schedule':
           this._model.Resources[f.name].Properties.Events[`${cleanSourceName}TimerRule`] = {
@@ -224,5 +246,83 @@ export class DefaultCodeGenerator extends CodeGenerator {
       this._model.Resources[q.name] = {};
     }
     this._model.Resources[q.name].Type = 'AWS::SQS::Queue';
+  }
+
+  protected handleWebsocketApiEndpoint(api: Component): void {
+    this._model.Resources[api.name] = {
+      Type: 'AWS::ApiGatewayV2::Api',
+      Properties: {
+        ProtocolType: 'WEBSOCKET',
+        RouteSelectionExpression: '$request.body.action',
+      },
+    };
+    this._model.Resources[`${api.name}Deployment`] = {
+      Type: 'AWS::ApiGatewayV2::Deployment',
+      Properties: {
+        ApiId: { Ref: api.name },
+      },
+    };
+    this._model.Resources[`${api.name}Stage`] = {
+      Type: 'AWS::ApiGatewayV2::Stage',
+      Properties: {
+        StageName: 'Production',
+        DeploymentId: { Ref: 'WebsocketApiDeployment' },
+        ApiId: { Ref: api.name },
+      },
+    };
+    this._model.Outputs[`${api.name}URL`] = {
+      Value: {
+        Join: [
+          '',
+          [
+            'wss://',
+            { Ref: api.name },
+            '.execute-api.',
+            { Ref: 'AWS::Region' },
+            '.amazonaws.com/',
+            { Ref: 'WebsocketApiStage' },
+          ],
+        ],
+      },
+    };
+    api.outboundConnections
+      .filter((c) => c.target.type === 'Function' && c.label)
+      .forEach((c) => {
+        this._handleWebsocketRoute(api.name, c.label, c.target.name);
+      });
+  }
+
+  private _handleWebsocketRoute(apiName: string, routeKey: string, functionName: string): void {
+    const cleanRouteKey = routeKey.replace(/[^a-zA-Z0-9]/g, '');
+    const routeName = cleanRouteKey.charAt(0).toUpperCase() + cleanRouteKey.slice(1);
+    this._model.Resources[`${apiName}${routeName}Route`] = {
+      Type: 'AWS::ApiGatewayV2::Route',
+      Properties: {
+        ApiId: { Ref: apiName },
+        RouteKey: routeKey,
+        AuthorizationType: 'NONE',
+        OperationName: `${routeName}Route`,
+        Target: { Join: ['/', ['integrations', { Ref: functionName }]] },
+      },
+    };
+    this._model.Resources[`${apiName}${routeName}Integration`] = {
+      Type: 'AWS::ApiGatewayV2::Integration',
+      Properties: {
+        ApiId: { Ref: apiName },
+        IntegrationType: 'AWS_PROXY',
+        Target: { Join: ['/', ['integrations', { Ref: functionName }]] },
+        IntegrationUri: {
+          'Fn::Sub': `arn:aws:apigateway:\${AWS::Region}:lambda:path/2015-03-31/functions/\${${functionName}.Arn}/invocations`,
+        },
+      },
+    };
+    this._model.Resources[`${apiName}${routeName}Permission`] = {
+      Type: 'AWS::Lambda::Permission',
+      Properties: {
+        Action: 'lambda:InvokeFunction',
+        FunctionName: { Ref: functionName },
+        Principal: 'apigateway.amazonaws.com',
+      },
+    };
   }
 }

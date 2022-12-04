@@ -4,21 +4,35 @@ import * as TSGenerator from './typescript-generator';
 
 export { Diagram, SAMGenerator, TSGenerator };
 
-const reader = new Diagram.Reader();
+export type AWSVizOptions = {
+  readerOptions?: Diagram.ReaderOptions;
+  codeGeneratorOptions?: SAMGenerator.CodeGeneratorOptions;
+};
 
-export function listFilesToBeUpdated(file: string, workspaceRoot: string): string[] {
-  const app = reader.read(file);
-  app.compile();
-  const typescriptGenerator = new TSGenerator.CodeGenerator(workspaceRoot);
-  const samGenerator = new SAMGenerator.DefaultCodeGenerator(workspaceRoot);
-  return [...samGenerator.getFilesToBeUpdated(), ...typescriptGenerator.getFilesToBeUpdated(app)];
-}
+export class AWSViz {
+  private readonly _options: AWSVizOptions;
 
-export function updateWorkspace(file: string, workspaceRoot: string): void {
-  const app = reader.read(file);
-  app.compile();
-  const typescriptGenerator = new TSGenerator.CodeGenerator(workspaceRoot);
-  const samGenerator = new SAMGenerator.DefaultCodeGenerator(workspaceRoot);
-  samGenerator.update(app);
-  typescriptGenerator.update(app);
+  constructor(options?: AWSVizOptions) {
+    this._options = options ?? {};
+    this._reader = new Diagram.Reader(this._options.readerOptions);
+  }
+
+  private readonly _reader: Diagram.Reader;
+
+  public listFilesToBeUpdated(file: string, workspaceRoot: string): string[] {
+    const app = this._reader.read(file);
+    app.compile();
+    const typescriptGenerator = new TSGenerator.CodeGenerator(workspaceRoot);
+    const samGenerator = new SAMGenerator.DefaultCodeGenerator(workspaceRoot);
+    return [...samGenerator.getFilesToBeUpdated(), ...typescriptGenerator.getFilesToBeUpdated(app)];
+  }
+
+  public updateWorkspace(file: string, workspaceRoot: string): void {
+    const app = this._reader.read(file);
+    app.compile();
+    const typescriptGenerator = new TSGenerator.CodeGenerator(workspaceRoot);
+    const samGenerator = new SAMGenerator.DefaultCodeGenerator(workspaceRoot, this._options.codeGeneratorOptions);
+    samGenerator.update(app);
+    typescriptGenerator.update(app);
+  }
 }

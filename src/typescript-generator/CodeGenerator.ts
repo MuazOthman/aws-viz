@@ -355,24 +355,24 @@ export class CodeGenerator extends AbstractCodeGenerator {
     let shouldBeFixed = !hasFile;
     const devDependencies = {
       '@types/aws-lambda': '^8.10.86',
-      '@types/jest': '^27.4.0',
-      '@types/node': '^17.0.17',
+      '@types/jest': '^29.2.3',
+      '@types/node': '^18.11.10',
       '@types/webpack': '^5.28.0',
       '@typescript-eslint/eslint-plugin': '^5.11.0',
       '@typescript-eslint/parser': '^5.11.0',
       eslint: '^8.9.0',
       'eslint-config-prettier': '^8.3.0',
       'eslint-plugin-prettier': '^4.0.0',
-      jest: '^27.0.6',
-      npm: '^8.5.0',
+      jest: '^29.3.1',
+      npm: '^9.1.3',
       prettier: '^2.1.1',
       rimraf: '^3.0.2',
-      'ts-jest': '^27.0.4',
+      'ts-jest': '^29.0.3',
       'ts-loader': '^9.2.6',
       'ts-node': '^10.5.0',
       typescript: '^4.0.2',
       webpack: '^5.68.0',
-      'webpack-cli': '^4.9.2',
+      'webpack-cli': '^5.0.0',
       'yaml-cfn': '^0.3.1',
     };
     const dependencies = {
@@ -406,12 +406,14 @@ export class CodeGenerator extends AbstractCodeGenerator {
       const conn = f.inboundConnections[i];
       switch (conn.source.type) {
         case 'ApiEndpoint':
-          eventImports.push('APIGatewayProxyEventV2');
-          eventImports.push('APIGatewayProxyResultV2');
-          eventTypes.push('APIGatewayProxyEventV2');
-          returnType = 'APIGatewayProxyResultV2';
-          evnVars.push('AllowedDomain');
-          returnStatement = `  return {
+          {
+            if (conn.source.properties['apiType'] === 'Http') {
+              eventImports.push('APIGatewayProxyEventV2');
+              eventImports.push('APIGatewayProxyResultV2');
+              eventTypes.push('APIGatewayProxyEventV2');
+              returnType = 'APIGatewayProxyResultV2';
+              evnVars.push('AllowedDomain');
+              returnStatement = `  return {
     statusCode: 200,
     body: '',
     headers: {
@@ -421,7 +423,17 @@ export class CodeGenerator extends AbstractCodeGenerator {
       'Access-Control-Allow-Methods': 'GET,PUT,PATCH,POST,DELETE',
     },
   };`;
+            }
+            if (conn.source.properties['apiType'] === 'Websocket') {
+              eventImports.push('APIGatewayProxyWebsocketEventV2');
+              eventImports.push('APIGatewayProxyStructuredResultV2');
+              eventTypes.push('APIGatewayProxyWebsocketEventV2');
+              returnType = 'APIGatewayProxyStructuredResultV2';
+              returnStatement = `  return { statusCode: 200, body: 'OK' };`;
+            }
+          }
           break;
+
         case 'Bucket':
           eventImports.push('S3Event');
           eventTypes.push('S3Event');
@@ -488,6 +500,36 @@ export class CodeGenerator extends AbstractCodeGenerator {
           awsSdkDeclarations.push(`const sns = new SNS();`);
           remindingComments.push(`// sns.publish({TopicArn : ${conn.target.name}TopicArn});`);
           evnVars.push(`${conn.target.name}TopicArn`);
+          break;
+        case 'ApiEndpoint':
+          if (conn.target.properties['apiType'] === 'Websocket') {
+            awsSdkImports.push(`import APIGatewayManagementApi from 'aws-sdk/clients/apigatewaymanagementapi';`);
+            evnVars.push('ApiId');
+            evnVars.push('ApiStage');
+            evnVars.push('AWS_REGION');
+            returnStatement = `  const connectionIds: string[] = []; // TODO: get connectionId
+  const postData = ''; // TODO: get postData
+  const managementApi = new APIGatewayManagementApi({
+    apiVersion: '2018-11-29',
+    endpoint: \`https://\${ApiId}.execute-api.\${AWS_REGION}.amazonaws.com/\${ApiStage}\`,
+  });
+
+  const postCalls = connectionIds.map(async (connectionId) => {
+    try {
+      await managementApi.postToConnection({ ConnectionId: connectionId, Data: postData }).promise();
+    } catch (e) {
+      if (e.statusCode === 410) {
+        console.log(\`Found stale connection \${connectionId}\`);
+        // TODO: handle stale connection
+      } else {
+        console.log(\`Failed sending message to \${connectionId}\`);
+        // TODO: handle other error
+      }
+    }
+
+    await Promise.all(postCalls);
+  });`;
+          }
           break;
       }
     }

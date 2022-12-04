@@ -29,6 +29,7 @@ function decompress(diagram: Diagram) {
 
 export type ReaderOptions = {
   runtimeColorMapping?: Record<string, string>;
+  apiTypeColorMapping?: Record<string, string>;
 };
 
 export class Reader {
@@ -68,6 +69,17 @@ export class Reader {
     return undefined;
   }
 
+  private _getApiType(style: string): string {
+    if (this._options.runtimeColorMapping) {
+      for (const color in this._options.apiTypeColorMapping) {
+        if (style.search(new RegExp(`fillColor=#${color}`, 'gi')) >= 0) {
+          return this._options.apiTypeColorMapping[color];
+        }
+      }
+    }
+    return 'Http';
+  }
+
   private _readComponent(vertex: unknown): Component {
     const style = vertex['@_style'] as string;
     const name = extractInnerText(vertex['@_value']).replace(/[\r\n]/g, '');
@@ -76,11 +88,16 @@ export class Reader {
       return new Component(name, 'Function', { runtime });
     }
     if (style.search(/shape=mxgraph\.aws4\.client/g) >= 0) return new Component(name, 'Browser');
-    if (style.search(/shape=mxgraph\.aws4\.endpoint/g) >= 0) return new Component(name, 'ApiEndpoint');
+    if (style.search(/shape=mxgraph\.aws4\.endpoint/g) >= 0) {
+      const apiType = this._getApiType(style);
+      return new Component(name, 'ApiEndpoint', { apiType });
+    }
     if (style.search(/shape=mxgraph\.aws4\.table/g) >= 0) return new Component(name, 'Table');
     if (style.search(/shape=mxgraph\.aws4\.topic/g) >= 0) return new Component(name, 'Topic');
     if (style.search(/shape=mxgraph\.aws4\.queue/g) >= 0) return new Component(name, 'Queue');
     if (style.search(/shape=mxgraph\.aws4\.bucket/g) >= 0) return new Component(name, 'Bucket');
+    if (style.search(/shape=mxgraph\.aws4\.eventbridge_custom_event_bus_resource/g) >= 0)
+      return new Component(name, 'EventBus');
     if (style.search(/shape=mxgraph\.aws4\.event_time_based/g) >= 0) return new Component(name, 'Schedule');
     return undefined;
   }
