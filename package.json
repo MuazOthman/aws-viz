@@ -1,6 +1,6 @@
 {
   "name": "@muazothman/aws-viz",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Use diagrams to build AWS cloud-native applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
