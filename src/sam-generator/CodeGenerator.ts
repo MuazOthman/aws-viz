@@ -8,7 +8,7 @@ import { join } from 'path';
 
 export abstract class CodeGenerator extends AbstractCodeGenerator {
   public static NodeJSLambdaXRayTracingLayer = {
-    'Fn::Sub': 'arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:16',
+    'Fn::Sub': 'arn:${AWS::Partition}:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:16',
   };
   protected _model: any = {};
   protected readonly _options: CodeGeneratorOptions;

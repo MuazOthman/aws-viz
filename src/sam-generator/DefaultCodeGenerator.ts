@@ -65,7 +65,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
                   Action: ['execute-api:ManageConnections'],
                   Resource: [
                     {
-                      'Fn::Sub': `arn:aws:execute-api:\${AWS::Region}:\${AWS::AccountId}:\${${conn.target.name}}/*`,
+                      'Fn::Sub': `arn:\${AWS::Partition}:execute-api:\${AWS::Region}:\${AWS::AccountId}:\${${conn.target.name}}/*`,
                     },
                   ],
                 },
@@ -221,6 +221,8 @@ export class DefaultCodeGenerator extends CodeGenerator {
       };
     }
     this._model.Resources[t.name].Type = 'AWS::DynamoDB::Table';
+    this._model.Resources[t.name].DeletionPolicy = 'Retain';
+    this._model.Resources[t.name].UpdateReplacePolicy = 'Retain';
     if (t.outboundConnections.length > 0) {
       // make sure stream is enabled
       this._model.Resources[t.name].Properties.StreamSpecification = this._model.Resources[t.name].Properties
@@ -239,6 +241,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
       this._model.Resources[b.name] = {};
     }
     this._model.Resources[b.name].Type = 'AWS::Events::EventBus';
+    this._model.Resources[b.name].Properties = { Name: { 'Fn::Sub': `\${AWS::StackName}-${b.name}` } };
   }
 
   protected handleQueue(q: Component): void {
@@ -266,23 +269,13 @@ export class DefaultCodeGenerator extends CodeGenerator {
       Type: 'AWS::ApiGatewayV2::Stage',
       Properties: {
         StageName: 'Production',
-        DeploymentId: { Ref: 'WebsocketApiDeployment' },
+        DeploymentId: { Ref: `${api.name}Deployment` },
         ApiId: { Ref: api.name },
       },
     };
     this._model.Outputs[`${api.name}URL`] = {
       Value: {
-        Join: [
-          '',
-          [
-            'wss://',
-            { Ref: api.name },
-            '.execute-api.',
-            { Ref: 'AWS::Region' },
-            '.amazonaws.com/',
-            { Ref: 'WebsocketApiStage' },
-          ],
-        ],
+        'Fn::Sub': `Fn::Sub: wss://\${${api.name}}.execute-api.\${AWS::Region}.amazonaws.com/\${${api.name}Stage}`,
       },
     };
     api.outboundConnections
@@ -302,7 +295,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
         RouteKey: routeKey,
         AuthorizationType: 'NONE',
         OperationName: `${routeName}Route`,
-        Target: { Join: ['/', ['integrations', { Ref: functionName }]] },
+        Target: { 'Fn::Join': ['/', ['integrations', { Ref: functionName }]] },
       },
     };
     this._model.Resources[`${apiName}${routeName}Integration`] = {
@@ -310,9 +303,8 @@ export class DefaultCodeGenerator extends CodeGenerator {
       Properties: {
         ApiId: { Ref: apiName },
         IntegrationType: 'AWS_PROXY',
-        Target: { Join: ['/', ['integrations', { Ref: functionName }]] },
         IntegrationUri: {
-          'Fn::Sub': `arn:aws:apigateway:\${AWS::Region}:lambda:path/2015-03-31/functions/\${${functionName}.Arn}/invocations`,
+          'Fn::Sub': `arn:\${AWS::Partition}:apigateway:\${AWS::Region}:lambda:path/2015-03-31/functions/\${${functionName}.Arn}/invocations`,
         },
       },
     };
