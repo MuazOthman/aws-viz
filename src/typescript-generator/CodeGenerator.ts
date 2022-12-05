@@ -575,11 +575,11 @@ export class CodeGenerator extends AbstractCodeGenerator {
   }
 
   private _fixFunctionFile(f: Component, shouldWriteChanges: boolean) {
-    const filePath = join(this.workspaceRoot, 'src', 'handlers', `${f.name}.ts`);
+    const filePath = join(this.workspaceRoot, 'src', 'handlers', f.name, `${f.name}.ts`);
     const hasFile = existsSync(filePath);
     const shouldBeFixed = !hasFile;
     if (shouldBeFixed && shouldWriteChanges) {
-      this._ensureFolderExists(join(this.workspaceRoot, 'src', 'handlers'));
+      this._ensureFolderExists(join(this.workspaceRoot, 'src', 'handlers', f.name));
       writeFileSync(filePath, this._getFunctionFileContents(f));
     }
     return shouldBeFixed;
@@ -599,7 +599,7 @@ export class CodeGenerator extends AbstractCodeGenerator {
     for (let i = 0; i < functions.length; i++) {
       const f = functions[i];
       if (this._fixFunctionFile(f, false)) {
-        result.push(`src/handlers/${f.name}.ts`);
+        result.push(`src/handlers/${f.name}/${f.name}.ts`);
       }
     }
     return result;
