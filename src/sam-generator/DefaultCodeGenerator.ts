@@ -241,7 +241,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
       this._model.Resources[b.name] = {};
     }
     this._model.Resources[b.name].Type = 'AWS::Events::EventBus';
-    this._model.Resources[b.name].Properties = { Name: { 'Fn::Sub': `\${AWS::StackName}-${b.name}` } };
+    this._model.Resources[b.name].Properties = { Name: { 'Fn::Sub': `\${EnvironmentName}-${b.name}` } };
   }
 
   protected handleQueue(q: Component): void {
@@ -256,11 +256,15 @@ export class DefaultCodeGenerator extends CodeGenerator {
       Type: 'AWS::ApiGatewayV2::Api',
       Properties: {
         ProtocolType: 'WEBSOCKET',
+        Name: { 'Fn::Sub': `\${EnvironmentName}-${api.name}` },
         RouteSelectionExpression: '$request.body.action',
       },
     };
     this._model.Resources[`${api.name}Deployment`] = {
       Type: 'AWS::ApiGatewayV2::Deployment',
+      DependsOn: api.outboundConnections
+        .filter((c) => c.target.type === 'Function' && c.label)
+        .map((c) => `${api.name}${this._getRouteName(c.label)}Route`),
       Properties: {
         ApiId: { Ref: api.name },
       },
@@ -275,7 +279,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
     };
     this._model.Outputs[`${api.name}URL`] = {
       Value: {
-        'Fn::Sub': `Fn::Sub: wss://\${${api.name}}.execute-api.\${AWS::Region}.amazonaws.com/\${${api.name}Stage}`,
+        'Fn::Sub': `wss://\${${api.name}}.execute-api.\${AWS::Region}.amazonaws.com/\${${api.name}Stage}`,
       },
     };
     api.outboundConnections
@@ -285,9 +289,13 @@ export class DefaultCodeGenerator extends CodeGenerator {
       });
   }
 
-  private _handleWebsocketRoute(apiName: string, routeKey: string, functionName: string): void {
+  private _getRouteName(routeKey: string): string {
     const cleanRouteKey = routeKey.replace(/[^a-zA-Z0-9]/g, '');
-    const routeName = cleanRouteKey.charAt(0).toUpperCase() + cleanRouteKey.slice(1);
+    return cleanRouteKey.charAt(0).toUpperCase() + cleanRouteKey.slice(1);
+  }
+
+  private _handleWebsocketRoute(apiName: string, routeKey: string, functionName: string): void {
+    const routeName = this._getRouteName(routeKey);
     this._model.Resources[`${apiName}${routeName}Route`] = {
       Type: 'AWS::ApiGatewayV2::Route',
       Properties: {
@@ -295,7 +303,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
         RouteKey: routeKey,
         AuthorizationType: 'NONE',
         OperationName: `${routeName}Route`,
-        Target: { 'Fn::Join': ['/', ['integrations', { Ref: functionName }]] },
+        Target: { 'Fn::Join': ['/', ['integrations', { Ref: `${apiName}${routeName}Integration` }]] },
       },
     };
     this._model.Resources[`${apiName}${routeName}Integration`] = {
@@ -310,6 +318,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
     };
     this._model.Resources[`${apiName}${routeName}Permission`] = {
       Type: 'AWS::Lambda::Permission',
+      DependsOn: [apiName],
       Properties: {
         Action: 'lambda:InvokeFunction',
         FunctionName: { Ref: functionName },
