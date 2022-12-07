@@ -4,6 +4,17 @@ import { parseSimpleFilters } from './parseSimpleFilters';
 import { CodeGenerator } from './CodeGenerator';
 
 export class DefaultCodeGenerator extends CodeGenerator {
+  private _extractHttpApiEventProps(apiName: string): Record<string, unknown> {
+    const pattern = new RegExp(`^\\s*(GET|POST|PUT|DELETE|PATCH)\\s+(.*)$`);
+    const matches = apiName.match(pattern);
+    if (matches) {
+      return {
+        Path: matches[2],
+        Method: matches[1],
+      };
+    }
+    return {};
+  }
   protected handleFunction(f: Component): void {
     if (!(f.name in this._model.Resources)) {
       this._model.Resources[f.name] = { Properties: {} };
@@ -75,7 +86,7 @@ export class DefaultCodeGenerator extends CodeGenerator {
               Ref: conn.target.name,
             });
             this.addEnvironmentVariable(f.name, `${conn.target.name}Stage`, {
-              Ref: `${conn.target.name}`,
+              Ref: `${conn.target.name}Stage`,
             });
           }
           break;
@@ -144,10 +155,10 @@ export class DefaultCodeGenerator extends CodeGenerator {
         case 'ApiEndpoint':
           if (conn.source.properties.apiType === 'Http') {
             this._model.Resources[f.name].Properties.Events[`${cleanSourceName}Api`] = {
-              Type: 'Api',
+              Type: 'HttpApi',
               Properties: {
-                Path: conn.source.properties.Endpoint,
-                Method: conn.source.properties.HttpMethod,
+                ...this._extractHttpApiEventProps(conn.source.name),
+                ApiId: { Ref: 'HttpApiResource' },
               },
             };
           }
@@ -210,6 +221,11 @@ export class DefaultCodeGenerator extends CodeGenerator {
             },
           ],
         },
+      };
+      this._model.Parameters.AllowedDomain = {
+        Type: 'String',
+        Description: 'The domain to allow connections from',
+        Default: '*',
       };
     }
   }

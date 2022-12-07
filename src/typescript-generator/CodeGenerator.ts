@@ -474,49 +474,52 @@ export class CodeGenerator extends AbstractCodeGenerator {
         case 'Bucket':
           awsSdkImports.push(`import S3 from 'aws-sdk/clients/s3';`);
           awsSdkDeclarations.push(`const s3 = new S3();`);
-          remindingComments.push(`// s3.putObject({Bucket: ${conn.target.name}BucketName});`);
+          remindingComments.push(`// await s3.putObject({Bucket: ${conn.target.name}BucketName}).promise();`);
           evnVars.push(`${conn.target.name}BucketName`);
           break;
         case 'EventBus':
           awsSdkImports.push(`import EventBridge from 'aws-sdk/clients/eventbridge';`);
           awsSdkDeclarations.push(`const eventBridge = new EventBridge();`);
-          remindingComments.push(`// eventBridge.putEvents(Entries: [{EventBusName: ${conn.target.name}BusName}]);`);
+          remindingComments.push(
+            `// await eventBridge.putEvents(Entries: [{EventBusName: ${conn.target.name}BusName}]).promise();`,
+          );
           evnVars.push(`${conn.target.name}BusName`);
           break;
         case 'Queue':
           awsSdkImports.push(`import SQS from 'aws-sdk/clients/sqs';`);
           awsSdkDeclarations.push(`const sqs = new SQS();`);
-          remindingComments.push(`// sqs.sendMessage({QueueUrl: ${conn.target.name}QueueUrl});`);
+          remindingComments.push(`// await sqs.sendMessage({QueueUrl: ${conn.target.name}QueueUrl}).promise();`);
           evnVars.push(`${conn.target.name}QueueUrl`);
           break;
         case 'Table':
           awsSdkImports.push(`import DocumentClient from 'aws-sdk/clients/dynamodb';`);
           awsSdkDeclarations.push(`const documentClient = new DocumentClient();`);
-          remindingComments.push(`// documentClient.get({TableName: ${conn.target.name}TableName});`);
+          remindingComments.push(`// await documentClient.get({TableName: ${conn.target.name}TableName}).promise();`);
           evnVars.push(`${conn.target.name}TableName`);
           break;
         case 'Topic':
           awsSdkImports.push(`import SNS from 'aws-sdk/clients/sns';`);
           awsSdkDeclarations.push(`const sns = new SNS();`);
-          remindingComments.push(`// sns.publish({TopicArn : ${conn.target.name}TopicArn});`);
+          remindingComments.push(`// await sns.publish({TopicArn : ${conn.target.name}TopicArn}).promise();`);
           evnVars.push(`${conn.target.name}TopicArn`);
           break;
         case 'ApiEndpoint':
           if (conn.target.properties['apiType'] === 'Websocket') {
             awsSdkImports.push(`import APIGatewayManagementApi from 'aws-sdk/clients/apigatewaymanagementapi';`);
-            evnVars.push('ApiId');
-            evnVars.push('ApiStage');
+            evnVars.push(`${conn.target}ApiId`);
+            evnVars.push(`${conn.target}Stage`);
             evnVars.push('AWS_REGION');
             returnStatement = `  const connectionIds: string[] = []; // TODO: get connectionId
   const postData = ''; // TODO: get postData
   const managementApi = new APIGatewayManagementApi({
     apiVersion: '2018-11-29',
-    endpoint: \`https://\${ApiId}.execute-api.\${AWS_REGION}.amazonaws.com/\${ApiStage}\`,
+    endpoint: \`https://\${${conn.target}ApiId}.execute-api.\${AWS_REGION}.amazonaws.com/\${${conn.target}Stage}\`,
   });
 
   const postCalls = connectionIds.map(async (connectionId) => {
     try {
       await managementApi.postToConnection({ ConnectionId: connectionId, Data: postData }).promise();
+      console.log(\`Successfully sent message to \${connectionId}\`);
     } catch (e) {
       if (e.statusCode === 410) {
         console.log(\`Found stale connection \${connectionId}\`);
