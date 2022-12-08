@@ -506,8 +506,8 @@ export class CodeGenerator extends AbstractCodeGenerator {
         case 'ApiEndpoint':
           if (conn.target.properties['apiType'] === 'Websocket') {
             awsSdkImports.push(`import APIGatewayManagementApi from 'aws-sdk/clients/apigatewaymanagementapi';`);
-            evnVars.push(`${conn.target}ApiId`);
-            evnVars.push(`${conn.target}Stage`);
+            evnVars.push(`${conn.target.name}ApiId`);
+            evnVars.push(`${conn.target.name}Stage`);
             evnVars.push('AWS_REGION');
             returnStatement = `  const connectionIds: string[] = []; // TODO: get connectionId
   const postData = ''; // TODO: get postData
