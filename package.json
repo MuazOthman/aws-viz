@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "deepmerge": "^4.2.2",
-    "fast-xml-parser": "^4.2.4",
+    "fast-xml-parser": "^4.2.5",
     "html-to-text": "^9.0.3",
     "lodash.isequal": "^4.5.0",
     "lodash.uniq": "^4.5.0",
